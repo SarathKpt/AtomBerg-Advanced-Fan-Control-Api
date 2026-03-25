@@ -1,0 +1,10 @@
+{
+  "permission": {
+    "read": {
+      "C:/Users/kptsa/OneDrive/Documents/GitHub/AtomBerg-Advanced-Fan-Sleep-Mod/.opencode/get-shit-done/*": "allow"
+    },
+    "external_directory": {
+      "C:/Users/kptsa/OneDrive/Documents/GitHub/AtomBerg-Advanced-Fan-Sleep-Mod/.opencode/get-shit-done/*": "allow"
+    }
+  }
+}
