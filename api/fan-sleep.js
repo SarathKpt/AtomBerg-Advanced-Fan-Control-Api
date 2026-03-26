@@ -213,6 +213,11 @@ export default async function handler(req, res) {
       commands.push({ speed: currentSpeed - 1 });
       actionTaken = "speed_lowered";
       finalSpeed  = currentSpeed - 1;
+    } else if (fanPower && currentSpeed <= 1) {
+      // Already at minimum speed — turn off instead
+      commands.push({ power: false });
+      actionTaken = "turned_off";
+      finalPower  = false;
     }
   }
 
