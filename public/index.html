@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AtomBerg Fan Sleep API</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #080c14;
+      --surface:  #0e1623;
+      --card:     #131d2e;
+      --border:   #1e2d45;
+      --accent:   #3b82f6;
+      --accent2:  #818cf8;
+      --success:  #10b981;
+      --warning:  #f59e0b;
+      --error:    #ef4444;
+      --text:     #e2e8f0;
+      --muted:    #64748b;
+      --glow:     rgba(59,130,246,.22);
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; line-height: 1.6; }
+
+    .container { max-width: 860px; margin: 0 auto; padding: 0 20px; }
+
+    /* ── Header ─────────────────────────────────────── */
+    header { padding: 56px 0 36px; text-align: center; }
+
+    .fan-icon { font-size: 52px; margin-bottom: 20px; display: block; animation: spin 8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    h1 {
+      font-size: clamp(1.5rem, 4vw, 2.3rem); font-weight: 700;
+      background: linear-gradient(135deg, #e2e8f0 0%, #3b82f6 55%, #818cf8 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      margin-bottom: 10px;
+    }
+    .tagline { color: var(--muted); font-size: .95rem; max-width: 460px; margin: 0 auto 28px; }
+
+    .badges { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 44px; }
+    .badge { padding: 3px 11px; border-radius: 999px; border: 1px solid var(--border); font-size: .73rem; font-weight: 500; color: var(--muted); background: var(--surface); }
+    .badge.accent { border-color: var(--accent); color: #60a5fa; background: rgba(59,130,246,.08); }
+
+    /* ── Mode cards ──────────────────────────────────── */
+    .mode-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 14px; margin-bottom: 44px; }
+    .mode-card {
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px;
+      transition: border-color .2s, transform .2s; cursor: default;
+    }
+    .mode-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .mode-card .top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .mode-card .icon { font-size: 1.3rem; }
+    .mode-card h3 { font-size: .875rem; font-weight: 600; }
+    .mode-chip { font-size: .67rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: rgba(59,130,246,.15); color: #60a5fa; margin-left: auto; }
+    .mode-card p  { font-size: .78rem; color: var(--muted); }
+    code { font-family: 'JetBrains Mono', monospace; font-size: .78rem; color: var(--accent2); background: rgba(129,140,248,.08); padding: 1px 5px; border-radius: 3px; }
+
+    /* ── Speed reference table ───────────────────────── */
+    .ref-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 44px; }
+    .ref-card h3 { font-size: .875rem; font-weight: 600; margin-bottom: 14px; }
+    table { width: 100%; border-collapse: collapse; font-size: .8rem; }
+    th, td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 500; }
+    td:first-child { font-family: 'JetBrains Mono', monospace; color: var(--accent2); }
+    tr:last-child td { border-bottom: none; }
+
+    /* ── Tester ──────────────────────────────────────── */
+    .tester { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 28px; margin-bottom: 44px; }
+    .tester h2 { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
+    .tester .sub { font-size: .8rem; color: var(--muted); margin-bottom: 24px; }
+
+    .fields { display: flex; flex-direction: column; gap: 14px; margin-bottom: 20px; }
+    .field { display: flex; flex-direction: column; gap: 5px; }
+    .field label { font-size: .73rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .field label span { color: var(--accent2); margin-left: 4px; font-size: .68rem; font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+    .field input, .field select {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+      padding: 9px 13px; color: var(--text); font-family: 'JetBrains Mono', monospace;
+      font-size: .8rem; outline: none; transition: border-color .2s, box-shadow .2s; width: 100%;
+    }
+    .field select { font-family: 'Inter', sans-serif; font-size: .85rem; cursor: pointer; }
+    .field input:focus, .field select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--glow); }
+    .field input::placeholder { color: var(--muted); opacity: .5; }
+
+    /* Mode indicator pill */
+    .mode-indicator {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: .75rem; font-weight: 600;
+      padding: 3px 10px; border-radius: 999px;
+      margin-bottom: 18px;
+      transition: all .3s;
+    }
+    .mode-indicator.discovery { background: rgba(245,158,11,.1); color: var(--warning); border: 1px solid rgba(245,158,11,.25); }
+    .mode-indicator.query     { background: rgba(129,140,248,.1); color: var(--accent2); border: 1px solid rgba(129,140,248,.25); }
+    .mode-indicator.control   { background: rgba(59,130,246,.1);  color: #60a5fa;        border: 1px solid rgba(59,130,246,.25); }
+
+    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    button { padding: 9px 20px; border-radius: 8px; border: none; font-family: 'Inter', sans-serif; font-size: .875rem; font-weight: 600; cursor: pointer; transition: all .2s; }
+    .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 0 18px var(--glow); display: flex; align-items: center; gap: 7px; }
+    .btn-primary:hover { background: #2563eb; transform: translateY(-1px); }
+    .btn-primary:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+    .btn-secondary { background: var(--surface); border: 1px solid var(--border); color: var(--muted); }
+    .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* ── Output ──────────────────────────────────────── */
+    .output-area { margin-top: 24px; }
+    .output-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .output-label { font-size: .73rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+    .status-pill { font-size: .7rem; font-weight: 700; padding: 2px 9px; border-radius: 999px; display: none; }
+    .status-pill.ok  { background: rgba(16,185,129,.12); color: var(--success); border: 1px solid rgba(16,185,129,.25); }
+    .status-pill.err { background: rgba(239,68,68,.12);  color: var(--error);   border: 1px solid rgba(239,68,68,.25); }
+
+    .output-box {
+      background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+      padding: 14px; font-family: 'JetBrains Mono', monospace; font-size: .78rem;
+      line-height: 1.75; color: var(--muted); min-height: 120px; white-space: pre-wrap;
+      word-break: break-all; max-height: 340px; overflow-y: auto; transition: border-color .2s;
+    }
+    .output-box.live  { color: var(--text); }
+    .output-box.error { border-color: var(--error); }
+
+    .jk { color: #94a3b8; } .js { color: #34d399; } .jn { color: #fb923c; } .jb { color: #818cf8; }
+
+    /* ── Spinner ─────────────────────────────────────── */
+    .spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.2); border-top-color: #fff; border-radius: 50%; animation: spin .55s linear infinite; display: none; }
+
+    /* ── Footer ──────────────────────────────────────── */
+    footer { text-align: center; padding: 20px 0 36px; font-size: .75rem; color: var(--muted); border-top: 1px solid var(--border); }
+    footer a { color: #60a5fa; text-decoration: none; }
+
+    @media (max-width: 500px) { .tester { padding: 18px; } .mode-grid { grid-template-columns: 1fr; } }
+
+    /* ── API Docs ────────────────────────────────────── */
+    .doc-section { margin-bottom: 44px; }
+    .doc-section > h2 { font-size: 1rem; font-weight: 600; margin-bottom: 18px; }
+    .example { background: var(--card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; margin-bottom: 14px; }
+    .example-header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface); }
+    .example-icon { font-size: 1rem; }
+    .example-header h4 { font-size: .85rem; font-weight: 600; }
+    .example-header .tag { font-size: .67rem; font-weight: 700; padding: 2px 8px; border-radius: 4px; margin-left: auto;
+      background: rgba(59,130,246,.15); color: #60a5fa; }
+    .ex-body { display: grid; grid-template-columns: 1fr 1fr; }
+    @media (max-width: 580px) { .ex-body { grid-template-columns: 1fr; } }
+    .ex-col { padding: 14px 16px; }
+    .ex-col + .ex-col { border-left: 1px solid var(--border); }
+    @media (max-width: 580px) { .ex-col + .ex-col { border-left: none; border-top: 1px solid var(--border); } }
+    .ex-label { font-size: .68rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+    .ex-code { font-family: 'JetBrains Mono', monospace; font-size: .75rem; line-height: 1.7; color: var(--text); white-space: pre; overflow-x: auto; }
+    .fields-table { width: 100%; border-collapse: collapse; font-size: .8rem; margin-bottom: 18px; }
+    .fields-table th, .fields-table td { padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--border); }
+    .fields-table th { color: var(--muted); font-weight: 500; }
+    .fields-table tr:last-child td { border-bottom: none; }
+    .req { color: #f87171; font-size: .7rem; font-weight: 700; }
+    .opt { color: #64748b; font-size: .7rem; font-weight: 600; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ── Header ── -->
+  <header>
+    <span class="fan-icon">🌀</span>
+    <h1>AtomBerg Fan Sleep API</h1>
+    <p class="tagline">Stateless serverless control for Atomberg smart fans — discover, query, and command in one endpoint.</p>
+    <div class="badges">
+      <span class="badge accent">POST /api/fan-sleep</span>
+      <span class="badge">Vercel Serverless</span>
+      <span class="badge">Node.js 20</span>
+      <span class="badge">Atomberg IoT</span>
+    </div>
+  </header>
+
+  <!-- ── Mode cards ── -->
+  <div class="mode-grid">
+    <div class="mode-card">
+      <div class="top"><span class="icon">🔍</span><h3>Discovery</h3><span class="mode-chip">no device_id</span></div>
+      <p>Lists all fans with IDs and names. Use this first to find your <code>device_id</code>.</p>
+    </div>
+    <div class="mode-card">
+      <div class="top"><span class="icon">📊</span><h3>Query</h3><span class="mode-chip">no speed</span></div>
+      <p>Returns the current power + speed of a specific fan. Read-only, no changes made.</p>
+    </div>
+    <div class="mode-card">
+      <div class="top"><span class="icon">⚡</span><h3>Control</h3><span class="mode-chip">speed set</span></div>
+      <p>Send a speed command: off, set 1–6, increment, or decrement. Auto power-on included.</p>
+    </div>
+  </div>
+
+  <!-- ── Speed reference ── -->
+  <div class="ref-card">
+    <h3>⚙️ Speed Values</h3>
+    <table>
+      <tr><th>Value</th><th>Behaviour</th></tr>
+      <tr><td>omit</td><td>Query mode — read only</td></tr>
+      <tr><td>-1</td><td>Decrement by 1 (min speed 1)</td></tr>
+      <tr><td>0</td><td>Turn fan off</td></tr>
+      <tr><td>1 – 6</td><td>Set absolute speed (auto power-on if off)</td></tr>
+      <tr><td>7</td><td>Increment by 1 (starts at 1 if fan is off)</td></tr>
+    </table>
+  </div>
+
+  <!-- ── API Documentation ── -->
+  <div class="doc-section">
+    <h2>📖 API Reference</h2>
+
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:18px">
+      <div style="font-size:.73rem;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px">Endpoint</div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:.9rem">
+        <span style="background:rgba(59,130,246,.15);color:#60a5fa;padding:2px 8px;border-radius:4px;font-size:.75rem;font-weight:700;margin-right:8px">POST</span>
+        /api/fan-sleep
+      </div>
+      <div style="margin-top:14px">
+        <table class="fields-table">
+          <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+          <tr><td><code>api_key</code></td><td>string</td><td><span class="req">required</span></td><td>Your Atomberg developer API key</td></tr>
+          <tr><td><code>refresh_token</code></td><td>string</td><td><span class="req">required</span></td><td>Long-lived Atomberg refresh token</td></tr>
+          <tr><td><code>device_id</code></td><td>string</td><td><span class="opt">optional</span></td><td>Target fan MAC. Omit → Discovery mode</td></tr>
+          <tr><td><code>speed</code></td><td>number</td><td><span class="opt">optional</span></td><td>Speed command. Omit → Query mode (read only)</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <!-- Discovery -->
+    <div class="example">
+      <div class="example-header">
+        <span class="example-icon">🔍</span>
+        <h4>Discovery mode — find all your fans</h4>
+        <span class="tag">no device_id</span>
+      </div>
+      <div class="ex-body">
+        <div class="ex-col">
+          <div class="ex-label">Request</div>
+          <div class="ex-code">{
+  "api_key": "YOUR_API_KEY",
+  "refresh_token": "YOUR_REFRESH_TOKEN"
+}</div>
+        </div>
+        <div class="ex-col">
+          <div class="ex-label">Response</div>
+          <div class="ex-code">{
+  "status": "discovery",
+  "device_id.1": "aabbccddeeff",
+  "name.1": "Living Room Fan",
+  "device_id.2": "112233445566",
+  "name.2": "Bedroom Fan"
+}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Query -->
+    <div class="example">
+      <div class="example-header">
+        <span class="example-icon">📊</span>
+        <h4>Query mode — read current state</h4>
+        <span class="tag">no speed</span>
+      </div>
+      <div class="ex-body">
+        <div class="ex-col">
+          <div class="ex-label">Request</div>
+          <div class="ex-code">{
+  "api_key": "YOUR_API_KEY",
+  "refresh_token": "YOUR_REFRESH_TOKEN",
+  "device_id": "aabbccddeeff"
+}</div>
+        </div>
+        <div class="ex-col">
+          <div class="ex-label">Response</div>
+          <div class="ex-code">{
+  "status": "query",
+  "power": true,
+  "current_speed": 4,
+  "device_id": "aabbccddeeff",
+  "name": "Living Room Fan"
+}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Control -->
+    <div class="example">
+      <div class="example-header">
+        <span class="example-icon">⚡</span>
+        <h4>Control mode — send a command</h4>
+        <span class="tag">speed provided</span>
+      </div>
+      <div class="ex-body">
+        <div class="ex-col">
+          <div class="ex-label">Request (set speed 3)</div>
+          <div class="ex-code">{
+  "api_key": "YOUR_API_KEY",
+  "refresh_token": "YOUR_REFRESH_TOKEN",
+  "device_id": "aabbccddeeff",
+  "speed": 3
+}</div>
+        </div>
+        <div class="ex-col">
+          <div class="ex-label">Response</div>
+          <div class="ex-code">{
+  "status": "success",
+  "action_taken": "speed_set",
+  "power": true,
+  "current_speed": 3,
+  "device_id": "aabbccddeeff",
+  "name": "Living Room Fan"
+}</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:14px 16px;font-size:.8rem;color:#fbbf24">
+      💡 <strong>Getting credentials:</strong> Open the <strong>Atomberg Home app</strong> → Settings → Developer Mode → Enable.
+      This generates your <code style="color:#fcd34d">api_key</code> and <code style="color:#fcd34d">refresh_token</code>.
+      Quota: <strong>100 calls/day</strong>, <strong>5 calls/sec</strong>.
+    </div>
+  </div>
+
+  <!-- ── Tester ── -->
+  <div class="tester">
+    <h2>🧪 Test the API</h2>
+    <p class="sub">Fill in credentials and hit Send. Mode is auto-detected from your inputs.</p>
+
+    <div class="mode-indicator discovery" id="mode-pill">🔍 Discovery mode</div>
+
+    <div class="fields">
+      <div class="field">
+        <label>API Key <span>required</span></label>
+        <input id="f-api-key" type="password" placeholder="g6c2gReJhk2xolAM..." autocomplete="off" />
+      </div>
+      <div class="field">
+        <label>Refresh Token <span>required</span></label>
+        <input id="f-refresh-token" type="password" placeholder="eyJ0eXAiOiJKV1Qi..." autocomplete="off" />
+      </div>
+      <div class="field">
+        <label>Device ID <span>optional — leave blank for discovery</span></label>
+        <input id="f-device-id" type="text" placeholder="b8f86215e354" autocomplete="off" oninput="updateModePill()" />
+      </div>
+      <div class="field">
+        <label>Speed <span>optional — leave as "omit" for query mode</span></label>
+        <select id="f-speed" onchange="updateModePill()">
+          <option value="omit">omit — query mode (read current state)</option>
+          <option value="-1">-1 — decrement by 1</option>
+          <option value="0">0 — turn fan off</option>
+          <option value="1">1 — set speed 1</option>
+          <option value="2">2 — set speed 2</option>
+          <option value="3">3 — set speed 3</option>
+          <option value="4">4 — set speed 4</option>
+          <option value="5">5 — set speed 5</option>
+          <option value="6">6 — set speed 6</option>
+          <option value="7">7 — increment by 1</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button id="send-btn" class="btn-primary" onclick="sendRequest()">
+        <span class="spinner" id="spinner"></span>
+        <span>Send Request</span>
+      </button>
+      <button class="btn-secondary" onclick="clearOut()">Clear</button>
+    </div>
+
+    <div class="output-area">
+      <div class="output-header">
+        <span class="output-label">Response</span>
+        <span class="status-pill" id="status-pill"></span>
+      </div>
+      <div class="output-box" id="output">Waiting for request...</div>
+    </div>
+  </div>
+
+  <footer>
+    AtomBerg Fan Sleep Mod &nbsp;·&nbsp;
+    <a href="https://github.com/SarathKpt/AtomBerg-Advanced-Fan-Sleep-Mod" target="_blank">GitHub</a>
+    &nbsp;·&nbsp;
+    <a href="https://developer.atomberg-iot.com" target="_blank">Atomberg API Docs</a>
+  </footer>
+
+</div>
+<script>
+  function updateModePill() {
+    const deviceId = document.getElementById('f-device-id').value.trim();
+    const speed    = document.getElementById('f-speed').value;
+    const pill     = document.getElementById('mode-pill');
+
+    if (!deviceId) {
+      pill.className = 'mode-indicator discovery';
+      pill.textContent = '🔍 Discovery mode — no device_id';
+    } else if (speed === 'omit') {
+      pill.className = 'mode-indicator query';
+      pill.textContent = '📊 Query mode — read only';
+    } else {
+      pill.className = 'mode-indicator control';
+      pill.textContent = '⚡ Control mode — will send command';
+    }
+  }
+
+  async function sendRequest() {
+    const apiKey  = document.getElementById('f-api-key').value.trim();
+    const token   = document.getElementById('f-refresh-token').value.trim();
+    const devId   = document.getElementById('f-device-id').value.trim();
+    const speedV  = document.getElementById('f-speed').value;
+    const btn     = document.getElementById('send-btn');
+    const spinner = document.getElementById('spinner');
+    const out     = document.getElementById('output');
+    const pill    = document.getElementById('status-pill');
+
+    if (!apiKey || !token) {
+      out.className = 'output-box error';
+      out.textContent = '⚠️  API Key and Refresh Token are required.';
+      return;
+    }
+
+    const body = { api_key: apiKey, refresh_token: token };
+    if (devId)          body.device_id = devId;
+    if (speedV !== 'omit') body.speed  = Number(speedV);
+
+    btn.disabled = true; spinner.style.display = 'block'; pill.style.display = 'none';
+    out.className = 'output-box'; out.textContent = 'Sending…';
+
+    try {
+      const t0  = Date.now();
+      const res = await fetch('/api/fan-sleep', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+      const ms  = Date.now() - t0;
+      const data = await res.json();
+
+      pill.style.display = 'inline-block';
+      if (res.ok) { pill.className = 'status-pill ok'; pill.textContent = `${res.status} OK · ${ms}ms`; out.className = 'output-box live'; }
+      else        { pill.className = 'status-pill err'; pill.textContent = `${res.status} Error · ${ms}ms`; out.className = 'output-box live error'; }
+
+      out.innerHTML = highlight(JSON.stringify(data, null, 2));
+    } catch (e) {
+      pill.style.display = 'inline-block'; pill.className = 'status-pill err'; pill.textContent = 'Network Error';
+      out.className = 'output-box error'; out.textContent = `❌ ${e.message}`;
+    } finally {
+      btn.disabled = false; spinner.style.display = 'none';
+    }
+  }
+
+  function clearOut() {
+    document.getElementById('output').className = 'output-box';
+    document.getElementById('output').textContent = 'Waiting for request…';
+    document.getElementById('status-pill').style.display = 'none';
+  }
+
+  function highlight(json) {
+    return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, m => {
+      if (/^"/.test(m)) return /:$/.test(m) ? `<span class="jk">${m}</span>` : `<span class="js">${m}</span>`;
+      if (/true|false|null/.test(m)) return `<span class="jb">${m}</span>`;
+      return `<span class="jn">${m}</span>`;
+    });
+  }
+
+  // Ctrl/Cmd+Enter to send
+  document.addEventListener('keydown', e => { if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') sendRequest(); });
+</script>
+</body>
+</html>
