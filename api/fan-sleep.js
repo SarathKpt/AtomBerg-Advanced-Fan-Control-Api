@@ -127,7 +127,7 @@ export default async function handler(req, res) {
     // Build name → device_id map: { "Fan Name": "device_id", ... }
     const flat = {};
     deviceStates.forEach(d => {
-      if (d.name) flat[d.name] = d.device_id;
+      if (d.device_id) flat[d.device_id] = d.name ?? d.device_id;
     });
 
     return res.status(200).json(flat);
