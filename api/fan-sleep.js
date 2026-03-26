@@ -124,11 +124,10 @@ export default async function handler(req, res) {
       })
     );
 
-    // Build flat numbered response: device_id.1, name.1, device_id.2, name.2, ...
-    const flat = { status: "discovery" };
-    deviceStates.forEach((d, i) => {
-      flat[`device_id.${i + 1}`] = d.device_id;
-      flat[`name.${i + 1}`]      = d.name;
+    // Build name → device_id map: { "Fan Name": "device_id", ... }
+    const flat = {};
+    deviceStates.forEach(d => {
+      if (d.name) flat[d.name] = d.device_id;
     });
 
     return res.status(200).json(flat);
