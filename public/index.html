@@ -197,7 +197,7 @@
     <table>
       <tr><th>Value</th><th>Behaviour</th></tr>
       <tr><td>omit</td><td>Query mode — read only</td></tr>
-      <tr><td>-1</td><td>Decrement by 1 (min speed 1)</td></tr>
+      <tr><td>-1</td><td>Decrement by 1 — turns off if already at speed 1</td></tr>
       <tr><td>0</td><td>Turn fan off</td></tr>
       <tr><td>1 – 6</td><td>Set absolute speed (auto power-on if off)</td></tr>
       <tr><td>7</td><td>Increment by 1 (starts at 1 if fan is off)</td></tr>
@@ -341,7 +341,7 @@
         <label>Speed <span>optional — leave as "omit" for query mode</span></label>
         <select id="f-speed" onchange="updateModePill()">
           <option value="omit">omit — query mode (read current state)</option>
-          <option value="-1">-1 — decrement by 1</option>
+          <option value="-1">-1 — decrement by 1 (turns off if at speed 1)</option>
           <option value="0">0 — turn fan off</option>
           <option value="1">1 — set speed 1</option>
           <option value="2">2 — set speed 2</option>
