@@ -189,6 +189,10 @@
       <div class="top"><span class="icon">⚡</span><h3>Control</h3><span class="mode-chip">speed set</span></div>
       <p>Send a speed command: off, set 1–6, increment, or decrement. Auto power-on included.</p>
     </div>
+    <div class="mode-card">
+      <div class="top"><span class="icon">✅</span><h3>Validate</h3><span class="mode-chip">validate: true</span></div>
+      <p>Checks if your <code>api_key</code> and <code>refresh_token</code> are valid. No device interaction.</p>
+    </div>
   </div>
 
   <!-- ── Speed reference ── -->
@@ -221,6 +225,7 @@
           <tr><td><code>refresh_token</code></td><td>string</td><td><span class="req">required</span></td><td>Long-lived Atomberg refresh token</td></tr>
           <tr><td><code>device_id</code></td><td>string</td><td><span class="opt">optional</span></td><td>Target fan MAC. Omit → Discovery mode</td></tr>
           <tr><td><code>speed</code></td><td>number</td><td><span class="opt">optional</span></td><td>Speed command. Omit → Query mode (read only)</td></tr>
+          <tr><td><code>validate</code></td><td>boolean</td><td><span class="opt">optional</span></td><td><code>true</code> → Check credentials only, no device calls</td></tr>
         </table>
       </div>
     </div>
@@ -309,6 +314,40 @@
         </div>
       </div>
     </div>
+    </div>
+
+    <!-- Validate -->
+    <div class="example">
+      <div class="example-header">
+        <span class="example-icon">✅</span>
+        <h4>Validate mode — check credentials only</h4>
+        <span class="tag">validate: true</span>
+      </div>
+      <div class="ex-body">
+        <div class="ex-col">
+          <div class="ex-label">Request</div>
+          <div class="ex-code">{
+  "api_key": "YOUR_API_KEY",
+  "refresh_token": "YOUR_REFRESH_TOKEN",
+  "validate": true
+}</div>
+        </div>
+        <div class="ex-col">
+          <div class="ex-label">Response</div>
+          <div class="ex-code">// Valid credentials:
+{
+  "status": "valid",
+  "message": "API key and refresh token are valid."
+}
+
+// Invalid / expired:
+{
+  "status": "invalid",
+  "message": "API key or refresh token is invalid or has expired."
+}</div>
+        </div>
+      </div>
+    </div>
 
     <div style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.2);border-radius:10px;padding:14px 16px;font-size:.8rem;color:#fbbf24">
       💡 <strong>Getting credentials:</strong> Open the <strong>Atomberg Home app</strong> → Settings → Developer Mode → Enable.
@@ -352,6 +391,12 @@
           <option value="7">7 — increment by 1</option>
         </select>
       </div>
+      <div class="field" style="flex-direction:row; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:10px 14px;">
+        <input type="checkbox" id="f-validate" onchange="updateModePill()" style="width:16px;height:16px;accent-color:var(--success);cursor:pointer;flex-shrink:0;" />
+        <label for="f-validate" style="font-size:.82rem;color:var(--text);cursor:pointer;text-transform:none;letter-spacing:0;font-weight:400;">
+          <strong>Validate credentials only</strong> — check if <code>api_key</code> and <code>refresh_token</code> are valid without touching any device
+        </label>
+      </div>
     </div>
 
     <div class="btn-row">
@@ -381,18 +426,22 @@
 </div>
 <script>
   function updateModePill() {
-    const deviceId = document.getElementById('f-device-id').value.trim();
-    const speed    = document.getElementById('f-speed').value;
-    const pill     = document.getElementById('mode-pill');
+    const deviceId  = document.getElementById('f-device-id').value.trim();
+    const speed     = document.getElementById('f-speed').value;
+    const validate  = document.getElementById('f-validate').checked;
+    const pill      = document.getElementById('mode-pill');
 
-    if (!deviceId) {
-      pill.className = 'mode-indicator discovery';
+    if (validate) {
+      pill.className   = 'mode-indicator query';
+      pill.textContent = '✅ Validate mode — credentials check only';
+    } else if (!deviceId) {
+      pill.className   = 'mode-indicator discovery';
       pill.textContent = '🔍 Discovery mode — no device_id';
     } else if (speed === 'omit') {
-      pill.className = 'mode-indicator query';
+      pill.className   = 'mode-indicator query';
       pill.textContent = '📊 Query mode — read only';
     } else {
-      pill.className = 'mode-indicator control';
+      pill.className   = 'mode-indicator control';
       pill.textContent = '⚡ Control mode — will send command';
     }
   }
@@ -400,12 +449,13 @@
   async function sendRequest() {
     const apiKey  = document.getElementById('f-api-key').value.trim();
     const token   = document.getElementById('f-refresh-token').value.trim();
-    const devId   = document.getElementById('f-device-id').value.trim();
-    const speedV  = document.getElementById('f-speed').value;
     const btn     = document.getElementById('send-btn');
     const spinner = document.getElementById('spinner');
     const out     = document.getElementById('output');
     const pill    = document.getElementById('status-pill');
+    const devId    = document.getElementById('f-device-id').value.trim();
+    const speedV   = document.getElementById('f-speed').value;
+    const doValidate = document.getElementById('f-validate').checked;
 
     if (!apiKey || !token) {
       out.className = 'output-box error';
@@ -414,8 +464,12 @@
     }
 
     const body = { api_key: apiKey, refresh_token: token };
-    if (devId)          body.device_id = devId;
-    if (speedV !== 'omit') body.speed  = Number(speedV);
+    if (doValidate) {
+      body.validate = true;
+    } else {
+      if (devId)             body.device_id = devId;
+      if (speedV !== 'omit') body.speed     = Number(speedV);
+    }
 
     btn.disabled = true; spinner.style.display = 'block'; pill.style.display = 'none';
     out.className = 'output-box'; out.textContent = 'Sending…';

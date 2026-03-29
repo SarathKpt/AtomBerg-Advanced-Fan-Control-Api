@@ -59,7 +59,7 @@ export default async function handler(req, res) {
   }
 
   // ── Parse & validate body ─────────────────────────────────────────────────
-  const { api_key, refresh_token, device_id, speed: requestedSpeed } = req.body ?? {};
+  const { api_key, refresh_token, device_id, speed: requestedSpeed, validate } = req.body ?? {};
   const speedProvided = req.body != null && "speed" in req.body;
 
   // Validate speed if provided
@@ -85,6 +85,17 @@ export default async function handler(req, res) {
     },
   });
   const authData = await authRes.json();
+
+  // ── Validate mode: return clean valid/invalid — no raw errors ────────────
+  if (validate === true) {
+    const isValid = authRes.ok && authData?.message?.access_token;
+    return res.status(200).json(
+      isValid
+        ? { status: "valid",   message: "API key and refresh token are valid." }
+        : { status: "invalid", message: "API key or refresh token is invalid or has expired." }
+    );
+  }
+
   await assertOk(authRes, authData, "get_access_token");
 
   const accessToken = authData?.message?.access_token;
@@ -92,7 +103,6 @@ export default async function handler(req, res) {
     return res.status(502).json({ error: "Could not extract access_token from Atomberg auth response", raw: authData });
   }
 
-  // Subsequent requests use both the api_key (as X-API-Key) and the access token
   const authHeaders = {
     "X-API-Key":    api_key,
     Authorization: `Bearer ${accessToken}`,
